@@ -47,6 +47,11 @@ func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Capacity:    room.Capacity,
 	}
 
+	if newRoom.Name == "" {
+		httputil.WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "name is required")
+		return
+	}
+
 	if err := h.roomService.Create(r.Context(), newRoom); err != nil {
 		h.log.Error("failed to create room", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
