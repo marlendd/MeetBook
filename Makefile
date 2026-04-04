@@ -1,4 +1,7 @@
-.PHONY: up down seed test test-e2e lint
+.PHONY: up down seed test test-e2e lint swagger
+
+swagger:
+	swag init -g cmd/api/main.go -o docs
 
 up:
 	docker-compose up --build -d

@@ -25,6 +25,20 @@ func NewSlotsHandler(SlotService *service.SlotService, log *slog.Logger) *SlotsH
 	}
 }
 
+// ListAvailable godoc
+//
+//	@Summary		Список доступных слотов по переговорке и дате
+//	@Tags			Slots
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			roomId	path		string	true	"ID переговорки"	format(uuid)
+//	@Param			date	query		string	true	"Дата (YYYY-MM-DD)"	example(2024-06-10)
+//	@Success		200		{object}	slotsResponse
+//	@Failure		400		{object}	httputil.ErrorResponse
+//	@Failure		401		{object}	httputil.ErrorResponse
+//	@Failure		404		{object}	httputil.ErrorResponse
+//	@Failure		500		{object}	httputil.ErrorResponse
+//	@Router			/rooms/{roomId}/slots/list [get]
 func (h *SlotsHandler) ListAvailable(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -69,4 +83,8 @@ func (h *SlotsHandler) ListAvailable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]any{"slots": slots})
+}
+
+type slotsResponse struct {
+	Slots []model.Slot `json:"slots"`
 }

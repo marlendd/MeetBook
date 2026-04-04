@@ -48,6 +48,12 @@ linters:
       - path: tests/e2e/
         linters:
           - unparam
+      - path: internal/handler/
+        linters:
+          - unused
+      - path: docs/
+        linters:
+          - godot
 
 issues:
   max-issues-per-linter: 50

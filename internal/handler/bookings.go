@@ -27,6 +27,22 @@ func NewBookingHandler(bookingService *service.BookingService, log *slog.Logger)
 	}
 }
 
+// Create godoc
+//
+//	@Summary		Создать бронь на слот
+//	@Tags			Bookings
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			body	body		createBookingRequest	true	"Данные брони"
+//	@Success		201		{object}	bookingResponse
+//	@Failure		400		{object}	httputil.ErrorResponse
+//	@Failure		401		{object}	httputil.ErrorResponse
+//	@Failure		403		{object}	httputil.ErrorResponse
+//	@Failure		404		{object}	httputil.ErrorResponse
+//	@Failure		409		{object}	httputil.ErrorResponse
+//	@Failure		500		{object}	httputil.ErrorResponse
+//	@Router			/bookings/create [post]
 func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -66,6 +82,19 @@ func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusCreated, map[string]any{"booking": booking})
 }
 
+// Cancel godoc
+//
+//	@Summary		Отменить бронь
+//	@Tags			Bookings
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			bookingId	path		string	true	"ID брони"	format(uuid)
+//	@Success		200			{object}	bookingResponse
+//	@Failure		401			{object}	httputil.ErrorResponse
+//	@Failure		403			{object}	httputil.ErrorResponse
+//	@Failure		404			{object}	httputil.ErrorResponse
+//	@Failure		500			{object}	httputil.ErrorResponse
+//	@Router			/bookings/{bookingId}/cancel [post]
 func (h *BookingHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	bookingIDStr := r.PathValue("bookingId")
 	bookingID, err := uuid.Parse(bookingIDStr)
@@ -94,11 +123,22 @@ func (h *BookingHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, map[string]any{"booking": booking})
 }
 
+// ListByUser godoc
+//
+//	@Summary		Мои брони
+//	@Tags			Bookings
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	bookingsResponse
+//	@Failure		401	{object}	httputil.ErrorResponse
+//	@Failure		403	{object}	httputil.ErrorResponse
+//	@Failure		500	{object}	httputil.ErrorResponse
+//	@Router			/bookings/my [get]
 func (h *BookingHandler) ListByUser(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	bookings, err := h.bookingService.ListByUser(r.Context(), userID)
 	if err != nil {
-		h.log.Error("failed to cancel booking", "error", err)
+		h.log.Error("failed to list bookings", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
 	}
@@ -109,6 +149,20 @@ func (h *BookingHandler) ListByUser(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, map[string]any{"bookings": bookings})
 }
 
+// ListAll godoc
+//
+//	@Summary		Список всех броней с пагинацией
+//	@Tags			Bookings
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			page		query		int	false	"Номер страницы"	default(1)
+//	@Param			pageSize	query		int	false	"Размер страницы"	default(20)
+//	@Success		200			{object}	bookingsPageResponse
+//	@Failure		400			{object}	httputil.ErrorResponse
+//	@Failure		401			{object}	httputil.ErrorResponse
+//	@Failure		403			{object}	httputil.ErrorResponse
+//	@Failure		500			{object}	httputil.ErrorResponse
+//	@Router			/bookings/list [get]
 func (h *BookingHandler) ListAll(w http.ResponseWriter, r *http.Request) {
 	var err error
 	page := 1
@@ -131,7 +185,7 @@ func (h *BookingHandler) ListAll(w http.ResponseWriter, r *http.Request) {
 
 	bookings, total, err := h.bookingService.ListAll(r.Context(), page, pageSize)
 	if err != nil {
-		h.log.Error("failed to cancel booking", "error", err)
+		h.log.Error("failed to list all bookings", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")
 		return
 	}
@@ -148,4 +202,28 @@ func (h *BookingHandler) ListAll(w http.ResponseWriter, r *http.Request) {
 			"total":    total,
 		},
 	})
+}
+
+type createBookingRequest struct {
+	SlotID               string `json:"slotId" example:"550e8400-e29b-41d4-a716-446655440000"`
+	CreateConferenceLink bool   `json:"createConferenceLink" example:"false"`
+}
+
+type bookingResponse struct {
+	Booking model.Booking `json:"booking"`
+}
+
+type bookingsResponse struct {
+	Bookings []model.Booking `json:"bookings"`
+}
+
+type paginationInfo struct {
+	Page     int `json:"page" example:"1"`
+	PageSize int `json:"pageSize" example:"20"`
+	Total    int `json:"total" example:"100"`
+}
+
+type bookingsPageResponse struct {
+	Bookings   []model.Booking `json:"bookings"`
+	Pagination paginationInfo  `json:"pagination"`
 }

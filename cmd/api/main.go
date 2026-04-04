@@ -10,6 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "github.com/internships-backend/test-backend-marlendd/docs"
 	"github.com/internships-backend/test-backend-marlendd/internal/conference"
 	"github.com/internships-backend/test-backend-marlendd/internal/config"
 	"github.com/internships-backend/test-backend-marlendd/internal/db"
@@ -19,6 +22,17 @@ import (
 	"github.com/internships-backend/test-backend-marlendd/internal/repository"
 	"github.com/internships-backend/test-backend-marlendd/internal/service"
 )
+
+//	@title			Room Booking Service
+//	@version		1.0
+//	@description	Сервис бронирования переговорок
+//	@host			localhost:8080
+//	@BasePath		/
+
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Введите токен в формате: Bearer {token}
 
 func main() {
 	// config
@@ -79,6 +93,7 @@ func run(cfg config.Config, log *slog.Logger) error {
 	userOnly := middleware.RequireRole(model.RoleUser)
 
 	mux.HandleFunc("GET /_info", handler.InfoHandler)
+	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 
 	mux.HandleFunc("POST /dummyLogin", authHandler.DummyLogin)
 	mux.HandleFunc("POST /register", authHandler.Register)

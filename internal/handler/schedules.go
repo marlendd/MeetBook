@@ -25,6 +25,23 @@ func NewScheduleHandler(scheduleService *service.ScheduleService, log *slog.Logg
 	}
 }
 
+// Create godoc
+//
+//	@Summary		Создать расписание переговорки
+//	@Tags			Schedules
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			roomId	path		string					true	"ID переговорки"	format(uuid)
+//	@Param			body	body		createScheduleRequest	true	"Расписание"
+//	@Success		201		{object}	scheduleResponse
+//	@Failure		400		{object}	httputil.ErrorResponse
+//	@Failure		401		{object}	httputil.ErrorResponse
+//	@Failure		403		{object}	httputil.ErrorResponse
+//	@Failure		404		{object}	httputil.ErrorResponse
+//	@Failure		409		{object}	httputil.ErrorResponse
+//	@Failure		500		{object}	httputil.ErrorResponse
+//	@Router			/rooms/{roomId}/schedule/create [post]
 func (h *ScheduleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -80,4 +97,15 @@ func (h *ScheduleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusCreated, map[string]any{"schedule": newSchedule})
+}
+
+type createScheduleRequest struct {
+	RoomID     string `json:"roomId" example:"550e8400-e29b-41d4-a716-446655440000"`
+	DaysOfWeek []int  `json:"daysOfWeek" example:"1,2,3,4,5"`
+	StartTime  string `json:"startTime" example:"09:00"`
+	EndTime    string `json:"endTime" example:"18:00"`
+}
+
+type scheduleResponse struct {
+	Schedule model.Schedule `json:"schedule"`
 }

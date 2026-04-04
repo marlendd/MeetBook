@@ -23,6 +23,17 @@ func NewAuthHandler(authService *service.AuthService, log *slog.Logger) *AuthHan
 	}
 }
 
+// DummyLogin godoc
+//
+//	@Summary		Получить тестовый JWT по роли
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		dummyLoginRequest	true	"Роль"
+//	@Success		200		{object}	tokenResponse
+//	@Failure		400		{object}	httputil.ErrorResponse
+//	@Failure		500		{object}	httputil.ErrorResponse
+//	@Router			/dummyLogin [post]
 func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -53,6 +64,17 @@ func (h *AuthHandler) DummyLogin(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
+// Register godoc
+//
+//	@Summary		Регистрация пользователя
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		registerRequest	true	"Данные пользователя"
+//	@Success		201		{object}	userResponse
+//	@Failure		400		{object}	httputil.ErrorResponse
+//	@Failure		500		{object}	httputil.ErrorResponse
+//	@Router			/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -95,6 +117,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusCreated, map[string]any{"user": user})
 }
 
+// Login godoc
+//
+//	@Summary		Авторизация по email и паролю
+//	@Tags			Auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body		loginRequest	true	"Учётные данные"
+//	@Success		200		{object}	tokenResponse
+//	@Failure		401		{object}	httputil.ErrorResponse
+//	@Failure		500		{object}	httputil.ErrorResponse
+//	@Router			/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -124,4 +157,29 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{"token": token})
+}
+
+// Request/response types for swagger docs
+
+type dummyLoginRequest struct {
+	Role string `json:"role" example:"user" enums:"admin,user"`
+}
+
+type registerRequest struct {
+	Email    string `json:"email" example:"user@example.com"`
+	Password string `json:"password" example:"secret123"`
+	Role     string `json:"role" example:"user" enums:"admin,user"`
+}
+
+type loginRequest struct {
+	Email    string `json:"email" example:"user@example.com"`
+	Password string `json:"password" example:"secret123"`
+}
+
+type tokenResponse struct {
+	Token string `json:"token" example:"eyJhbGci..."`
+}
+
+type userResponse struct {
+	User model.User `json:"user"`
 }

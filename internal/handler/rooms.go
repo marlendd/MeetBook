@@ -22,6 +22,20 @@ func NewRoomHandler(roomService *service.RoomService, log *slog.Logger) *RoomHan
 	}
 }
 
+// Create godoc
+//
+//	@Summary		Создать переговорку
+//	@Tags			Rooms
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			body	body		createRoomRequest	true	"Данные переговорки"
+//	@Success		201		{object}	roomResponse
+//	@Failure		400		{object}	httputil.ErrorResponse
+//	@Failure		401		{object}	httputil.ErrorResponse
+//	@Failure		403		{object}	httputil.ErrorResponse
+//	@Failure		500		{object}	httputil.ErrorResponse
+//	@Router			/rooms/create [post]
 func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -61,6 +75,16 @@ func (h *RoomHandler) Create(w http.ResponseWriter, r *http.Request) {
 	httputil.WriteJSON(w, http.StatusCreated, map[string]any{"room": newRoom})
 }
 
+// List godoc
+//
+//	@Summary		Список переговорок
+//	@Tags			Rooms
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	roomsResponse
+//	@Failure		401	{object}	httputil.ErrorResponse
+//	@Failure		500	{object}	httputil.ErrorResponse
+//	@Router			/rooms/list [get]
 func (h *RoomHandler) List(w http.ResponseWriter, r *http.Request) {
 	rooms, err := h.roomService.List(r.Context())
 	if err != nil {
@@ -72,4 +96,18 @@ func (h *RoomHandler) List(w http.ResponseWriter, r *http.Request) {
 		rooms = []model.Room{}
 	}
 	httputil.WriteJSON(w, http.StatusOK, map[string]any{"rooms": rooms})
+}
+
+type createRoomRequest struct {
+	Name        string  `json:"name" example:"Переговорка 1"`
+	Description *string `json:"description" example:"Большая переговорка"`
+	Capacity    *int    `json:"capacity" example:"8"`
+}
+
+type roomResponse struct {
+	Room model.Room `json:"room"`
+}
+
+type roomsResponse struct {
+	Rooms []model.Room `json:"rooms"`
 }

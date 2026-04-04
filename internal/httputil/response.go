@@ -7,13 +7,16 @@ import (
 )
 
 type errorBody struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code    string `json:"code" example:"INVALID_REQUEST"`
+	Message string `json:"message" example:"invalid request"`
 }
 
-type errorResponse struct {
+// ErrorResponse используется в swagger-документации.
+type ErrorResponse struct {
 	Error errorBody `json:"error"`
 }
+
+type errorResponse = ErrorResponse
 
 func WriteJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")

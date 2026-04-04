@@ -68,7 +68,25 @@ make down      # остановить
 make seed      # наполнить БД тестовыми переговорками и расписаниями
 make test      # юнит-тесты с покрытием
 make test-e2e  # E2E тесты
+make swagger   # регенерировать Swagger-документацию (swaggo/swag)
 ```
+
+## Swagger UI
+
+Документация доступна по адресу `http://localhost:8080/swagger/index.html` после запуска сервиса. Генерируется из аннотаций в коде командой `make swagger`.
+
+## Регистрация и авторизация по email/паролю
+
+Реализованы дополнительные эндпоинты:
+
+- `POST /register` — создать пользователя (email, password, role)
+- `POST /login` — получить JWT по email и паролю
+
+Пароль хранится в виде bcrypt-хеша. Эндпоинт `/dummyLogin` по-прежнему доступен и работает независимо.
+
+## Линтер
+
+Конфигурация в `.golangci.yaml`. Включены линтеры: `errcheck`, `govet`, `staticcheck`, `unused`, `misspell`, `noctx`, `bodyclose`, `exhaustive`, `godot`, `nilerr`, `prealloc`, `unconvert`, `unparam`, `whitespace`, `errorlint`, `copyloopvar`. Форматтеры: `gofmt`, `goimports`.
 
 ## Про conference link
 
