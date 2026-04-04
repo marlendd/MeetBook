@@ -27,11 +27,15 @@ func futureSlot(id uuid.UUID) *model.Slot {
 	}
 }
 
+func newBookingSvc(bookingRepo *mockBookingRepo, slotRepo *mockSlotRepo, conf *mockConferenceClient) *service.BookingService {
+	return service.NewBookingService(bookingRepo, slotRepo, conf, testLog)
+}
+
 func TestBookingCreate_Success(t *testing.T) {
 	slotID := uuid.New()
 	userID := uuid.New()
 
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{
 			createFn: func(_ context.Context, b *model.Booking) error {
 				b.ID = uuid.New()
@@ -44,10 +48,10 @@ func TestBookingCreate_Success(t *testing.T) {
 				return futureSlot(id), nil
 			},
 		},
-		testLog,
+		nil,
 	)
 
-	booking, err := svc.Create(context.Background(), userID, slotID)
+	booking, err := svc.Create(context.Background(), userID, slotID, false)
 	require.NoError(t, err)
 	assert.Equal(t, slotID, booking.SlotID)
 	assert.Equal(t, userID, booking.UserID)
@@ -55,23 +59,23 @@ func TestBookingCreate_Success(t *testing.T) {
 }
 
 func TestBookingCreate_SlotNotFound(t *testing.T) {
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{},
 		&mockSlotRepo{
 			getByIDFn: func(_ context.Context, _ uuid.UUID) (*model.Slot, error) {
 				return nil, nil
 			},
 		},
-		testLog,
+		nil,
 	)
 
-	_, err := svc.Create(context.Background(), uuid.New(), uuid.New())
+	_, err := svc.Create(context.Background(), uuid.New(), uuid.New(), false)
 	assert.ErrorIs(t, err, model.ErrSlotNotFound)
 }
 
 func TestBookingCreate_SlotInPast(t *testing.T) {
 	slotID := uuid.New()
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{},
 		&mockSlotRepo{
 			getByIDFn: func(_ context.Context, id uuid.UUID) (*model.Slot, error) {
@@ -82,16 +86,16 @@ func TestBookingCreate_SlotInPast(t *testing.T) {
 				}, nil
 			},
 		},
-		testLog,
+		nil,
 	)
 
-	_, err := svc.Create(context.Background(), uuid.New(), slotID)
+	_, err := svc.Create(context.Background(), uuid.New(), slotID, false)
 	assert.ErrorIs(t, err, model.ErrSlotInPast)
 }
 
 func TestBookingCreate_AlreadyBooked(t *testing.T) {
 	slotID := uuid.New()
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{
 			createFn: func(_ context.Context, _ *model.Booking) error {
 				return model.ErrSlotAlreadyBooked
@@ -102,11 +106,68 @@ func TestBookingCreate_AlreadyBooked(t *testing.T) {
 				return futureSlot(id), nil
 			},
 		},
-		testLog,
+		nil,
 	)
 
-	_, err := svc.Create(context.Background(), uuid.New(), slotID)
+	_, err := svc.Create(context.Background(), uuid.New(), slotID, false)
 	assert.ErrorIs(t, err, model.ErrSlotAlreadyBooked)
+}
+
+func TestBookingCreate_WithConferenceLink(t *testing.T) {
+	slotID := uuid.New()
+	userID := uuid.New()
+
+	svc := newBookingSvc(
+		&mockBookingRepo{
+			createFn: func(_ context.Context, b *model.Booking) error {
+				b.ID = uuid.New()
+				return nil
+			},
+		},
+		&mockSlotRepo{
+			getByIDFn: func(_ context.Context, id uuid.UUID) (*model.Slot, error) {
+				return futureSlot(id), nil
+			},
+		},
+		&mockConferenceClient{
+			createLinkFn: func(_ context.Context, _ uuid.UUID) (string, error) {
+				return "https://meet.example.com/test", nil
+			},
+		},
+	)
+
+	booking, err := svc.Create(context.Background(), userID, slotID, true)
+	require.NoError(t, err)
+	require.NotNil(t, booking.ConferenceLink)
+	assert.Equal(t, "https://meet.example.com/test", *booking.ConferenceLink)
+}
+
+func TestBookingCreate_ConferenceLinkFails_BookingStillCreated(t *testing.T) {
+	slotID := uuid.New()
+	userID := uuid.New()
+
+	svc := newBookingSvc(
+		&mockBookingRepo{
+			createFn: func(_ context.Context, b *model.Booking) error {
+				b.ID = uuid.New()
+				return nil
+			},
+		},
+		&mockSlotRepo{
+			getByIDFn: func(_ context.Context, id uuid.UUID) (*model.Slot, error) {
+				return futureSlot(id), nil
+			},
+		},
+		&mockConferenceClient{
+			createLinkFn: func(_ context.Context, _ uuid.UUID) (string, error) {
+				return "", errors.New("conference service unavailable")
+			},
+		},
+	)
+
+	booking, err := svc.Create(context.Background(), userID, slotID, true)
+	require.NoError(t, err) // бронь создана несмотря на сбой
+	assert.Nil(t, booking.ConferenceLink)
 }
 
 func TestBookingCancel_Success(t *testing.T) {
@@ -121,7 +182,7 @@ func TestBookingCancel_Success(t *testing.T) {
 		Status: model.StatusActive,
 	}
 
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{
 			getByIdFn: func(_ context.Context, _ uuid.UUID) (*model.Booking, error) {
 				return existing, nil
@@ -131,7 +192,7 @@ func TestBookingCancel_Success(t *testing.T) {
 			},
 		},
 		&mockSlotRepo{},
-		testLog,
+		nil,
 	)
 
 	booking, err := svc.Cancel(context.Background(), userID, bookingID)
@@ -149,14 +210,14 @@ func TestBookingCancel_Idempotent(t *testing.T) {
 		Status: model.StatusCanceled,
 	}
 
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{
 			getByIdFn: func(_ context.Context, _ uuid.UUID) (*model.Booking, error) {
 				return existing, nil
 			},
 		},
 		&mockSlotRepo{},
-		testLog,
+		nil,
 	)
 
 	booking, err := svc.Cancel(context.Background(), userID, bookingID)
@@ -165,14 +226,14 @@ func TestBookingCancel_Idempotent(t *testing.T) {
 }
 
 func TestBookingCancel_NotFound(t *testing.T) {
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{
 			getByIdFn: func(_ context.Context, _ uuid.UUID) (*model.Booking, error) {
 				return nil, nil
 			},
 		},
 		&mockSlotRepo{},
-		testLog,
+		nil,
 	)
 
 	_, err := svc.Cancel(context.Background(), uuid.New(), uuid.New())
@@ -184,7 +245,7 @@ func TestBookingCancel_Forbidden(t *testing.T) {
 	ownerID := uuid.New()
 	otherID := uuid.New()
 
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{
 			getByIdFn: func(_ context.Context, _ uuid.UUID) (*model.Booking, error) {
 				return &model.Booking{
@@ -195,7 +256,7 @@ func TestBookingCancel_Forbidden(t *testing.T) {
 			},
 		},
 		&mockSlotRepo{},
-		testLog,
+		nil,
 	)
 
 	_, err := svc.Cancel(context.Background(), otherID, bookingID)
@@ -204,7 +265,7 @@ func TestBookingCancel_Forbidden(t *testing.T) {
 
 func TestBookingCreate_RepoError(t *testing.T) {
 	repoErr := errors.New("db error")
-	svc := service.NewBookingService(
+	svc := newBookingSvc(
 		&mockBookingRepo{
 			createFn: func(_ context.Context, _ *model.Booking) error {
 				return repoErr
@@ -215,9 +276,9 @@ func TestBookingCreate_RepoError(t *testing.T) {
 				return futureSlot(id), nil
 			},
 		},
-		testLog,
+		nil,
 	)
 
-	_, err := svc.Create(context.Background(), uuid.New(), uuid.New())
+	_, err := svc.Create(context.Background(), uuid.New(), uuid.New(), false)
 	assert.ErrorIs(t, err, repoErr)
 }

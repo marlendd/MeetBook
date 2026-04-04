@@ -47,7 +47,7 @@ func (h *BookingHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.GetUserID(r.Context())
 
-	booking, err := h.bookingService.Create(r.Context(), userID, req.SlotID)
+	booking, err := h.bookingService.Create(r.Context(), userID, req.SlotID, req.CreateConferenceLink)
 	if err != nil {
 		switch {
 		case errors.Is(err, model.ErrSlotNotFound):

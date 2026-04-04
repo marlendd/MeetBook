@@ -11,33 +11,30 @@ import (
 )
 
 type BookingService struct {
-	bookingRepo BookingRepo
-	slotRepo    SlotRepo
-	log         *slog.Logger
+	bookingRepo      BookingRepo
+	slotRepo         SlotRepo
+	conferenceClient ConferenceClient
+	log              *slog.Logger
 }
 
-func NewBookingService(bookingRepo BookingRepo, slotRepo SlotRepo, log *slog.Logger) *BookingService {
+func NewBookingService(bookingRepo BookingRepo, slotRepo SlotRepo, conferenceClient ConferenceClient, log *slog.Logger) *BookingService {
 	return &BookingService{
-		bookingRepo: bookingRepo,
-		slotRepo:    slotRepo,
-		log:         log,
+		bookingRepo:      bookingRepo,
+		slotRepo:         slotRepo,
+		conferenceClient: conferenceClient,
+		log:              log,
 	}
 }
 
-func (b *BookingService) Create(ctx context.Context, userID, slotID uuid.UUID) (*model.Booking, error) {
-	// получаем слот
+func (b *BookingService) Create(ctx context.Context, userID, slotID uuid.UUID, createConferenceLink bool) (*model.Booking, error) {
 	slot, err := b.slotRepo.GetByID(ctx, slotID)
 	if err != nil {
 		return nil, err
 	}
-
-	// проверяем наличие слота
 	if slot == nil {
 		b.log.Info("slot not found", "slotID", slotID)
 		return nil, model.ErrSlotNotFound
 	}
-
-	// проверяем время начала слота
 	if slot.Start.Before(time.Now()) {
 		b.log.Info("start in past")
 		return nil, model.ErrSlotInPast
@@ -51,6 +48,24 @@ func (b *BookingService) Create(ctx context.Context, userID, slotID uuid.UUID) (
 
 	if err := b.bookingRepo.Create(ctx, booking); err != nil {
 		return nil, err
+	}
+
+	// Запрашиваем ссылку на конференцию после успешного создания брони.
+	// Сбой внешнего сервиса не откатывает бронь — она уже создана.
+	// Ссылка просто не будет заполнена, что допустимо по бизнес-логике.
+	if createConferenceLink && b.conferenceClient != nil {
+		link, err := b.conferenceClient.CreateLink(ctx, booking.ID)
+		if err != nil {
+			b.log.Warn("failed to create conference link, booking created without it",
+				"bookingID", booking.ID, "error", err)
+		} else {
+			booking.ConferenceLink = &link
+			if err := b.bookingRepo.UpdateConferenceLink(ctx, booking.ID, link); err != nil {
+				b.log.Warn("failed to save conference link",
+					"bookingID", booking.ID, "error", err)
+				booking.ConferenceLink = nil
+			}
+		}
 	}
 
 	return booking, nil

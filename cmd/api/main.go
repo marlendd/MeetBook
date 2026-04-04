@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/internships-backend/test-backend-marlendd/internal/conference"
 	"github.com/internships-backend/test-backend-marlendd/internal/config"
 	"github.com/internships-backend/test-backend-marlendd/internal/db"
 	"github.com/internships-backend/test-backend-marlendd/internal/handler"
@@ -53,13 +54,15 @@ func run(cfg config.Config, log *slog.Logger) error {
 	scheduleRepo := repository.NewScheduleRepository(pool, log)
 	slotRepo := repository.NewSlotRepository(pool, log)
 	bookingRepo := repository.NewBookingRepository(pool, log)
+	userRepo := repository.NewUserRepository(pool, log)
 
 	// сервисы
-	authService := service.NewAuthService(cfg.JWTSecret)
+	authService := service.NewAuthService(cfg.JWTSecret, userRepo, log)
 	roomService := service.NewRoomService(roomRepo, log)
 	scheduleService := service.NewScheduleService(roomRepo, scheduleRepo, log)
 	slotService := service.NewSlotService(slotRepo, scheduleRepo, roomRepo, log)
-	bookingService := service.NewBookingService(bookingRepo, slotRepo, log)
+	conferenceClient := conference.NewMockClient(0.1) // 10% вероятность сбоя для демонстрации
+	bookingService := service.NewBookingService(bookingRepo, slotRepo, conferenceClient, log)
 
 	// хэндлеры
 	authHandler := handler.NewAuthHandler(authService, log)
@@ -78,6 +81,8 @@ func run(cfg config.Config, log *slog.Logger) error {
 	mux.HandleFunc("GET /_info", handler.InfoHandler)
 
 	mux.HandleFunc("POST /dummyLogin", authHandler.DummyLogin)
+	mux.HandleFunc("POST /register", authHandler.Register)
+	mux.HandleFunc("POST /login", authHandler.Login)
 
 	// rooms
 	mux.Handle("POST /rooms/create", auth(adminOnly(http.HandlerFunc(roomHandler.Create))))

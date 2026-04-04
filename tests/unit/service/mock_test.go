@@ -9,7 +9,7 @@ import (
 	"github.com/internships-backend/test-backend-marlendd/internal/model"
 )
 
-// --- BookingRepo mock ---
+// BookingRepo
 
 type mockBookingRepo struct {
 	createFn     func(ctx context.Context, booking *model.Booking) error
@@ -28,6 +28,9 @@ func (m *mockBookingRepo) GetById(ctx context.Context, id uuid.UUID) (*model.Boo
 func (m *mockBookingRepo) Cancel(ctx context.Context, id uuid.UUID) error {
 	return m.cancelFn(ctx, id)
 }
+func (m *mockBookingRepo) UpdateConferenceLink(_ context.Context, _ uuid.UUID, _ string) error {
+	return nil
+}
 func (m *mockBookingRepo) ListAll(ctx context.Context, page, pageSize int) ([]model.Booking, int, error) {
 	return m.listAllFn(ctx, page, pageSize)
 }
@@ -35,7 +38,7 @@ func (m *mockBookingRepo) ListByUser(ctx context.Context, userID uuid.UUID) ([]m
 	return m.listByUserFn(ctx, userID)
 }
 
-// --- SlotRepo mock ---
+//  SlotRepo mock
 
 type mockSlotRepo struct {
 	getByIDFn       func(ctx context.Context, id uuid.UUID) (*model.Slot, error)
@@ -53,7 +56,7 @@ func (m *mockSlotRepo) ListAvailable(ctx context.Context, roomID uuid.UUID, date
 	return m.listAvailableFn(ctx, roomID, date)
 }
 
-// --- RoomRepo mock ---
+//  RoomRepo mock
 
 type mockRoomRepo struct {
 	createFn  func(ctx context.Context, room *model.Room) error
@@ -71,7 +74,7 @@ func (m *mockRoomRepo) List(ctx context.Context) ([]model.Room, error) {
 	return m.listFn(ctx)
 }
 
-// --- ScheduleRepo mock ---
+//  ScheduleRepo mock
 
 type mockScheduleRepo struct {
 	createFn      func(ctx context.Context, schedule *model.Schedule) error
@@ -83,4 +86,31 @@ func (m *mockScheduleRepo) Create(ctx context.Context, schedule *model.Schedule)
 }
 func (m *mockScheduleRepo) GetByRoomId(ctx context.Context, roomID uuid.UUID) (*model.Schedule, error) {
 	return m.getByRoomIdFn(ctx, roomID)
+}
+
+//  UserRepo mock
+
+type mockUserRepo struct {
+	createFn     func(ctx context.Context, user *model.User) error
+	getByEmailFn func(ctx context.Context, email string) (*model.User, error)
+}
+
+func (m *mockUserRepo) Create(ctx context.Context, user *model.User) error {
+	return m.createFn(ctx, user)
+}
+func (m *mockUserRepo) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	return m.getByEmailFn(ctx, email)
+}
+
+// ConferenceClient mock
+
+type mockConferenceClient struct {
+	createLinkFn func(ctx context.Context, bookingID uuid.UUID) (string, error)
+}
+
+func (m *mockConferenceClient) CreateLink(ctx context.Context, bookingID uuid.UUID) (string, error) {
+	if m.createLinkFn != nil {
+		return m.createLinkFn(ctx, bookingID)
+	}
+	return "", nil
 }

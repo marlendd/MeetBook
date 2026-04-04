@@ -38,7 +38,7 @@ CREATE TABLE bookings (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     slot_id         UUID NOT NULL REFERENCES slots(id) ON DELETE CASCADE,
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    status          TEXT NOT NULL CHECK (status IN ('active', 'cancelled')),
+    status          TEXT NOT NULL CHECK (status IN ('active', 'canceled')),
     conference_link TEXT,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

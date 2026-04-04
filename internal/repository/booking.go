@@ -74,13 +74,22 @@ func (b *BookingRepository) GetById(ctx context.Context, id uuid.UUID) (*model.B
 }
 
 func (b *BookingRepository) Cancel(ctx context.Context, id uuid.UUID) error {
-	query := `UPDATE bookings SET status = 'cancelled' WHERE id = $1`
+	query := `UPDATE bookings SET status = 'canceled' WHERE id = $1`
 
 	if _, err := b.db.Exec(ctx, query, id); err != nil {
 		b.log.Error("failed to execute query", "error", err)
 		return err
 	}
 
+	return nil
+}
+
+func (b *BookingRepository) UpdateConferenceLink(ctx context.Context, id uuid.UUID, link string) error {
+	query := `UPDATE bookings SET conference_link = $1 WHERE id = $2`
+	if _, err := b.db.Exec(ctx, query, link, id); err != nil {
+		b.log.Error("failed to update conference link", "error", err)
+		return err
+	}
 	return nil
 }
 

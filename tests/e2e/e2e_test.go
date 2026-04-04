@@ -80,7 +80,7 @@ func TestE2E_CreateRoomScheduleBooking(t *testing.T) {
 	roomSvc := service.NewRoomService(roomRepo, testLog)
 	scheduleSvc := service.NewScheduleService(roomRepo, scheduleRepo, testLog)
 	slotSvc := service.NewSlotService(slotRepo, scheduleRepo, roomRepo, testLog)
-	bookingSvc := service.NewBookingService(bookingRepo, slotRepo, testLog)
+	bookingSvc := service.NewBookingService(bookingRepo, slotRepo, nil, testLog)
 
 	// 1. Создаём переговорку
 	room := &model.Room{Name: "Conference Room A"}
@@ -114,7 +114,7 @@ func TestE2E_CreateRoomScheduleBooking(t *testing.T) {
 
 	// 4. Создаём бронь
 	userID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
-	booking, err := bookingSvc.Create(ctx, userID, slots[0].ID)
+	booking, err := bookingSvc.Create(ctx, userID, slots[0].ID, false)
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusActive, booking.Status)
 	assert.Equal(t, slots[0].ID, booking.SlotID)
@@ -138,9 +138,8 @@ func TestE2E_CancelBooking(t *testing.T) {
 	roomSvc := service.NewRoomService(roomRepo, testLog)
 	scheduleSvc := service.NewScheduleService(roomRepo, scheduleRepo, testLog)
 	slotSvc := service.NewSlotService(slotRepo, scheduleRepo, roomRepo, testLog)
-	bookingSvc := service.NewBookingService(bookingRepo, slotRepo, testLog)
+	bookingSvc := service.NewBookingService(bookingRepo, slotRepo, nil, testLog)
 
-	// Setup: room + schedule + slot
 	room := &model.Room{Name: "Room B"}
 	require.NoError(t, roomSvc.Create(ctx, room))
 
@@ -159,19 +158,19 @@ func TestE2E_CancelBooking(t *testing.T) {
 	userID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
 
 	// Создаём бронь
-	booking, err := bookingSvc.Create(ctx, userID, slots[0].ID)
+	booking, err := bookingSvc.Create(ctx, userID, slots[0].ID, false)
 	require.NoError(t, err)
 	assert.Equal(t, model.StatusActive, booking.Status)
 
 	// Отменяем бронь
-	canceled, err := bookingSvc.Cancel(ctx, userID, booking.ID)
+	canceledBooking, err := bookingSvc.Cancel(ctx, userID, booking.ID)
 	require.NoError(t, err)
-	assert.Equal(t, model.StatusCanceled, canceled.Status)
+	assert.Equal(t, model.StatusCanceled, canceledBooking.Status)
 
 	// Повторная отмена — идемпотентна, ошибки нет
-	cancelled2, err := bookingSvc.Cancel(ctx, userID, booking.ID)
+	canceledBooking2, err := bookingSvc.Cancel(ctx, userID, booking.ID)
 	require.NoError(t, err)
-	assert.Equal(t, model.StatusCanceled, cancelled2.Status)
+	assert.Equal(t, model.StatusCanceled, canceledBooking2.Status)
 
 	// Слот должен снова стать доступным
 	availableSlots, err := slotSvc.ListAvailable(ctx, room.ID, tomorrow)

@@ -1,10 +1,13 @@
 package service
 
 import (
+	"context"
+	"log/slog"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/internships-backend/test-backend-marlendd/internal/model"
 )
@@ -22,10 +25,12 @@ type Claims struct {
 
 type AuthService struct {
 	jwtSecret string
+	userRepo  UserRepo
+	log       *slog.Logger
 }
 
-func NewAuthService(jwtSecret string) *AuthService {
-	return &AuthService{jwtSecret: jwtSecret}
+func NewAuthService(jwtSecret string, userRepo UserRepo, log *slog.Logger) *AuthService {
+	return &AuthService{jwtSecret: jwtSecret, userRepo: userRepo, log: log}
 }
 
 func (a *AuthService) DummyLogin(role model.Role) (string, error) {
@@ -39,6 +44,57 @@ func (a *AuthService) DummyLogin(role model.Role) (string, error) {
 		return "", model.ErrInvalidRole
 	}
 
+	return a.issueToken(userID, role)
+}
+
+func (a *AuthService) Register(ctx context.Context, email, password string, role model.Role) (*model.User, error) {
+	existing, err := a.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		a.log.Error("register: failed to check email", "error", err)
+		return nil, err
+	}
+	if existing != nil {
+		return nil, model.ErrEmailTaken
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		a.log.Error("register: failed to hash password", "error", err)
+		return nil, err
+	}
+
+	user := &model.User{
+		Email:        email,
+		PasswordHash: string(hash),
+		Role:         role,
+	}
+
+	if err := a.userRepo.Create(ctx, user); err != nil {
+		a.log.Error("register: failed to create user", "error", err)
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (a *AuthService) Login(ctx context.Context, email, password string) (string, error) {
+	user, err := a.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		a.log.Error("login: failed to get user", "error", err)
+		return "", err
+	}
+	if user == nil {
+		return "", model.ErrInvalidCredentials
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return "", model.ErrInvalidCredentials
+	}
+
+	return a.issueToken(user.ID, user.Role)
+}
+
+func (a *AuthService) issueToken(userID uuid.UUID, role model.Role) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		Role:   role,
