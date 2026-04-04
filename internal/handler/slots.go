@@ -55,7 +55,7 @@ func (h *SlotsHandler) ListAvailable(w http.ResponseWriter, r *http.Request) {
 	slots, err := h.slotsService.ListAvailable(r.Context(), roomID, date)
 	if err != nil {
 		if errors.Is(err, model.ErrRoomNotFound) {
-			httputil.WriteError(w, http.StatusNotFound, "NOT_FOUND", "room not found")
+			httputil.WriteError(w, http.StatusNotFound, "ROOM_NOT_FOUND", "room not found")
 		} else {
 			h.log.Error("failed to list slots", "error", err)
 			httputil.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")

@@ -68,9 +68,9 @@ func (h *ScheduleHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err = h.scheduleService.Create(r.Context(), roomID, newSchedule); err != nil {
 		switch {
 		case errors.Is(err, model.ErrRoomNotFound):
-			httputil.WriteError(w, http.StatusNotFound, "NOT_FOUND", "room not found")
+			httputil.WriteError(w, http.StatusNotFound, "ROOM_NOT_FOUND", "room not found")
 		case errors.Is(err, model.ErrScheduleExists):
-			httputil.WriteError(w, http.StatusConflict, "CONFLICT", "schedule already exists")
+			httputil.WriteError(w, http.StatusConflict, "SCHEDULE_EXISTS", "schedule for this room already exists and cannot be changed")
 		default:
 			h.log.Error("failed to create schedule", "error", err)
 			httputil.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "internal server error")

@@ -2,13 +2,17 @@ package db
 
 import (
 	"context"
+	"embed"
 	"log/slog"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+//go:embed migrations
+var migrationsFS embed.FS
 
 func Connect(ctx context.Context, dsn string, log *slog.Logger) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, dsn)
@@ -28,7 +32,14 @@ func Connect(ctx context.Context, dsn string, log *slog.Logger) (*pgxpool.Pool, 
 
 func RunMigrations(dsn string, log *slog.Logger) error {
 	log.Debug("running migration")
-	m, err := migrate.New("file://migrations", dsn)
+
+	src, err := iofs.New(migrationsFS, "migrations")
+	if err != nil {
+		log.Error("failed to create migration source", "error", err)
+		return err
+	}
+
+	m, err := migrate.NewWithSourceInstance("iofs", src, dsn)
 	if err != nil {
 		log.Error("failed to run migrations", "error", err)
 		return err
