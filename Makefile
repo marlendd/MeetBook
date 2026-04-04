@@ -27,5 +27,8 @@ test:
 test-e2e:
 	go test ./tests/e2e/... -v -timeout 120s
 
+load-test:
+	docker run --rm -i --network host grafana/k6 run - < tests/load/load_test.js
+
 lint:
 	golangci-lint run ./...
