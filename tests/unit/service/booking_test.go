@@ -9,10 +9,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/internships-backend/test-backend-marlendd/internal/model"
-	"github.com/internships-backend/test-backend-marlendd/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/internships-backend/test-backend-marlendd/internal/model"
+	"github.com/internships-backend/test-backend-marlendd/internal/service"
 )
 
 var testLog = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
@@ -135,7 +136,7 @@ func TestBookingCancel_Success(t *testing.T) {
 
 	booking, err := svc.Cancel(context.Background(), userID, bookingID)
 	require.NoError(t, err)
-	assert.Equal(t, model.StatusCancelled, booking.Status)
+	assert.Equal(t, model.StatusCanceled, booking.Status)
 }
 
 func TestBookingCancel_Idempotent(t *testing.T) {
@@ -145,7 +146,7 @@ func TestBookingCancel_Idempotent(t *testing.T) {
 	existing := &model.Booking{
 		ID:     bookingID,
 		UserID: userID,
-		Status: model.StatusCancelled,
+		Status: model.StatusCanceled,
 	}
 
 	svc := service.NewBookingService(
@@ -160,7 +161,7 @@ func TestBookingCancel_Idempotent(t *testing.T) {
 
 	booking, err := svc.Cancel(context.Background(), userID, bookingID)
 	require.NoError(t, err)
-	assert.Equal(t, model.StatusCancelled, booking.Status)
+	assert.Equal(t, model.StatusCanceled, booking.Status)
 }
 
 func TestBookingCancel_NotFound(t *testing.T) {

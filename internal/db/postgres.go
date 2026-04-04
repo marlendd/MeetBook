@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"embed"
+	"errors"
 	"log/slog"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -46,7 +47,7 @@ func RunMigrations(dsn string, log *slog.Logger) error {
 	}
 
 	if err := m.Up(); err != nil {
-		if err == migrate.ErrNoChange {
+		if errors.Is(err, migrate.ErrNoChange) {
 			log.Info("no migrations to apply")
 			return nil
 		}

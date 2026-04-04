@@ -6,10 +6,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/internships-backend/test-backend-marlendd/internal/model"
-	"github.com/internships-backend/test-backend-marlendd/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/internships-backend/test-backend-marlendd/internal/model"
+	"github.com/internships-backend/test-backend-marlendd/internal/service"
 )
 
 func TestSlotListAvailable_Success(t *testing.T) {

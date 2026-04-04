@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/internships-backend/test-backend-marlendd/internal/model"
 )
 
@@ -66,14 +67,14 @@ func (b *BookingService) Cancel(ctx context.Context, userID, bookingID uuid.UUID
 	if booking.UserID != userID {
 		return nil, model.ErrForbidden
 	}
-	if booking.Status == model.StatusCancelled {
+	if booking.Status == model.StatusCanceled {
 		return booking, nil
 	}
 
 	if err := b.bookingRepo.Cancel(ctx, bookingID); err != nil {
 		return nil, err
 	}
-	booking.Status = model.StatusCancelled
+	booking.Status = model.StatusCanceled
 
 	return booking, nil
 }

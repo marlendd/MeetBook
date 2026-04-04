@@ -2,13 +2,16 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/internships-backend/test-backend-marlendd/internal/model"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/internships-backend/test-backend-marlendd/internal/model"
 )
 
 type RoomRepository struct {
@@ -52,7 +55,7 @@ func (r *RoomRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Room
 		&room.ID, &room.Name, &room.Description, &room.Capacity, &room.CreatedAt,
 	)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		r.log.Error("failed to get room by id", "error", err)

@@ -2,12 +2,15 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/google/uuid"
-	"github.com/internships-backend/test-backend-marlendd/internal/model"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/internships-backend/test-backend-marlendd/internal/model"
 )
 
 type ScheduleRepository struct {
@@ -50,7 +53,7 @@ func (s *ScheduleRepository) GetByRoomId(ctx context.Context, roomID uuid.UUID) 
 	if err := row.Scan(
 		&schedule.ID, &schedule.RoomID, &schedule.DaysOfWeek, &schedule.StartTime, &schedule.EndTime,
 	); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			s.log.Info("no such schedule for room", "roomID", roomID)
 			return nil, nil
 		}

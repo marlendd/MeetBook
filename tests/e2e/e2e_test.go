@@ -8,15 +8,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/internships-backend/test-backend-marlendd/internal/db"
-	"github.com/internships-backend/test-backend-marlendd/internal/model"
-	"github.com/internships-backend/test-backend-marlendd/internal/repository"
-	"github.com/internships-backend/test-backend-marlendd/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/internships-backend/test-backend-marlendd/internal/db"
+	"github.com/internships-backend/test-backend-marlendd/internal/model"
+	"github.com/internships-backend/test-backend-marlendd/internal/repository"
+	"github.com/internships-backend/test-backend-marlendd/internal/service"
 )
 
 var testLog = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
@@ -62,7 +63,7 @@ func setupDB(t *testing.T) string {
 }
 
 // TestE2E_CreateRoomScheduleBooking проверяет сценарий:
-// создание переговорки → создание расписания → получение слотов → создание брони
+// создание переговорки → создание расписания → получение слотов → создание брони.
 func TestE2E_CreateRoomScheduleBooking(t *testing.T) {
 	dsn := setupDB(t)
 	ctx := context.Background()
@@ -120,7 +121,7 @@ func TestE2E_CreateRoomScheduleBooking(t *testing.T) {
 	assert.Equal(t, userID, booking.UserID)
 }
 
-// TestE2E_CancelBooking проверяет сценарий: создание брони → отмена → повторная отмена (идемпотентность)
+// TestE2E_CancelBooking проверяет сценарий: создание брони → отмена → повторная отмена (идемпотентность).
 func TestE2E_CancelBooking(t *testing.T) {
 	dsn := setupDB(t)
 	ctx := context.Background()
@@ -163,14 +164,14 @@ func TestE2E_CancelBooking(t *testing.T) {
 	assert.Equal(t, model.StatusActive, booking.Status)
 
 	// Отменяем бронь
-	cancelled, err := bookingSvc.Cancel(ctx, userID, booking.ID)
+	canceled, err := bookingSvc.Cancel(ctx, userID, booking.ID)
 	require.NoError(t, err)
-	assert.Equal(t, model.StatusCancelled, cancelled.Status)
+	assert.Equal(t, model.StatusCanceled, canceled.Status)
 
 	// Повторная отмена — идемпотентна, ошибки нет
 	cancelled2, err := bookingSvc.Cancel(ctx, userID, booking.ID)
 	require.NoError(t, err)
-	assert.Equal(t, model.StatusCancelled, cancelled2.Status)
+	assert.Equal(t, model.StatusCanceled, cancelled2.Status)
 
 	// Слот должен снова стать доступным
 	availableSlots, err := slotSvc.ListAvailable(ctx, room.ID, tomorrow)

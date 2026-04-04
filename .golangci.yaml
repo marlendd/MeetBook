@@ -1,0 +1,58 @@
+version: "2"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/internships-backend/test-backend-marlendd
+
+linters:
+  default: none
+  enable:
+    - errcheck       # необработанные ошибки
+    - govet          # подозрительные конструкции
+    - staticcheck    # статический анализ
+    - unused         # неиспользуемый код
+    - misspell       # опечатки в комментариях
+    - noctx          # http-запросы без context
+    - bodyclose      # незакрытые http.Response.Body
+    - exhaustive     # полнота switch по enum
+    - godot          # точка в конце комментариев
+    - nilerr         # return nil вместо err
+    - prealloc       # предварительное выделение слайсов
+    - unconvert      # лишние приведения типов
+    - unparam        # параметры функций, которые всегда одинаковы
+    - whitespace     # лишние пустые строки
+    - errorlint      # проблемы с error wrapping
+    - copyloopvar    # копирование переменных цикла
+  settings:
+    misspell:
+      locale: US
+    exhaustive:
+      default-signifies-exhaustive: true
+    godot:
+      scope: declarations
+      capital: false
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - unparam
+          - godot
+      - path: tests/e2e/
+        linters:
+          - unparam
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 5
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly

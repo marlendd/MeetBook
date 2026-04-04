@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/internships-backend/test-backend-marlendd/internal/model"
-	"github.com/internships-backend/test-backend-marlendd/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/internships-backend/test-backend-marlendd/internal/model"
+	"github.com/internships-backend/test-backend-marlendd/internal/service"
 )
 
 func TestScheduleCreate_Success(t *testing.T) {

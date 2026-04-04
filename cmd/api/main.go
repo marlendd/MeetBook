@@ -30,7 +30,6 @@ func main() {
 		log.Error("server failed", "error", err)
 		os.Exit(1)
 	}
-
 }
 
 func run(cfg config.Config, log *slog.Logger) error {
@@ -41,12 +40,12 @@ func run(cfg config.Config, log *slog.Logger) error {
 	dbCtx := context.Background()
 	pool, err := db.Connect(dbCtx, cfg.PostgresDSN, log)
 	if err != nil {
-		return fmt.Errorf("failed to connect to db: %v", err)
+		return fmt.Errorf("failed to connect to db: %w", err)
 	}
 
 	// миграции
 	if err := db.RunMigrations(cfg.PostgresDSN, log); err != nil {
-		return fmt.Errorf("failed to run db migrations: %v", err)
+		return fmt.Errorf("failed to run db migrations: %w", err)
 	}
 
 	// репозитории
@@ -75,7 +74,7 @@ func run(cfg config.Config, log *slog.Logger) error {
 	auth := middleware.Auth(cfg.JWTSecret)
 	adminOnly := middleware.RequireRole(model.RoleAdmin)
 	userOnly := middleware.RequireRole(model.RoleUser)
-	
+
 	mux.HandleFunc("GET /_info", handler.InfoHandler)
 
 	mux.HandleFunc("POST /dummyLogin", authHandler.DummyLogin)
@@ -94,14 +93,14 @@ func run(cfg config.Config, log *slog.Logger) error {
 	mux.Handle("GET /bookings/list", auth(adminOnly(http.HandlerFunc(bookingHandler.ListAll))))
 
 	srv := &http.Server{
-		Addr: ":" + cfg.HTTPPort,
+		Addr:    ":" + cfg.HTTPPort,
 		Handler: mux,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	go func ()  {
+	go func() {
 		log.Info("starting server", "port", cfg.HTTPPort)
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Error("server error", "error", err)
@@ -112,11 +111,11 @@ func run(cfg config.Config, log *slog.Logger) error {
 	stop()
 	log.Info("shutting down server...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		 return fmt.Errorf("server shutdown failed: %v", err)
+		return fmt.Errorf("server shutdown failed: %w", err)
 	}
 
 	return nil

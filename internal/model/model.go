@@ -16,8 +16,8 @@ const (
 type Status string
 
 const (
-	StatusActive    Status = "active"
-	StatusCancelled Status = "cancelled"
+	StatusActive   Status = "active"
+	StatusCanceled Status = "canceled"
 )
 
 type User struct {

@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/internships-backend/test-backend-marlendd/internal/model"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/internships-backend/test-backend-marlendd/internal/model"
 )
 
 type BookingRepository struct {
@@ -61,7 +63,7 @@ func (b *BookingRepository) GetById(ctx context.Context, id uuid.UUID) (*model.B
 	if err := row.Scan(
 		&booking.ID, &booking.SlotID, &booking.UserID, &booking.Status, &booking.ConferenceLink, &booking.CreatedAt,
 	); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			b.log.Info("no such booking", "ID", id)
 			return nil, nil
 		}

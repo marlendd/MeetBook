@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/internships-backend/test-backend-marlendd/internal/model"
 )
 

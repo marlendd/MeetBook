@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+
 	"github.com/internships-backend/test-backend-marlendd/internal/httputil"
 	"github.com/internships-backend/test-backend-marlendd/internal/model"
 	"github.com/internships-backend/test-backend-marlendd/internal/service"

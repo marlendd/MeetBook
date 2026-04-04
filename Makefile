@@ -1,4 +1,4 @@
-.PHONY: up down seed test test-e2e
+.PHONY: up down seed test test-e2e lint
 
 up:
 	docker-compose up --build -d
@@ -23,3 +23,6 @@ test:
 
 test-e2e:
 	go test ./tests/e2e/... -v -timeout 120s
+
+lint:
+	golangci-lint run ./...

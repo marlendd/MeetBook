@@ -2,15 +2,17 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/internships-backend/test-backend-marlendd/internal/model"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/internships-backend/test-backend-marlendd/internal/model"
 )
 
 type SlotRepository struct {
@@ -105,7 +107,7 @@ func (s *SlotRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Slot
 	var slot model.Slot
 	err := s.db.QueryRow(ctx, query, id).Scan(&slot.ID, &slot.RoomID, &slot.Start, &slot.End)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		s.log.Error("failed to get slot by id", "error", err)
